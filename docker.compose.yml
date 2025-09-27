@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  quantum-node:
+    build: .
+    ports:
+      - "8333:8333"  # P2P
+      - "8334:8334"  # API
+    volumes:
+      - ./data:/home/quantum/quantum_blockchain/data
+    environment:
+      - NODE_TYPE=full
+      - NETWORK=mainnet
+    restart: unless-stopped
+
+  quantum-miner:
+    build: .
+    command: ["python", "quantum_blockchain/scripts/deploy_mainnet.py", "--type", "mining"]
+    volumes:
+      - ./data:/home/quantum/quantum_blockchain/data
+    environment:
+      - NODE_TYPE=mining
+      - NETWORK=mainnet
+    depends_on:
+      - quantum-node
+    restart: unless-stopped
+
+  quantum-api:
+    build: .
+    ports:
+      - "8334:8334"
+    command: ["python", "quantum_blockchain/scripts/deploy_mainnet.py", "--type", "api"]
+    volumes:
+      - ./data:/home/quantum/quantum_blockchain/data
+    environment:
+      - NODE_TYPE=api
+      - NETWORK=mainnet
+    depends_on:
+      - quantum-node
+    restart: unless-stopped
