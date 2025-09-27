@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @echo off
 chcp 65001
 title Quantum Blockchain Windows
@@ -29,4 +30,10 @@ pip install -r requirements.txt
 echo 🚀 Lancement de Quantum Blockchain...
 python main.py --web-port 8080 --p2p-port 8333
 
+=======
+@echo off
+chcp 65001
+cd /d "C:\Users\adrie\Desktop\Projet code\BLOCKCHAIN\Quantum_Blockchain\src"
+python main.py
+>>>>>>> aabbdd6 (Quantum)
 pause

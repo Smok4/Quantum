@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/usr/bin/env python3
 """
 Point d'entrée principal Quantum Blockchain
@@ -50,3 +51,51 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+=======
+#!/usr/bin/env python3
+"""
+Point d'entrée principal Quantum Blockchain - Windows
+"""
+
+import asyncio
+import sys
+import os
+from pathlib import Path
+
+# Configuration du chemin
+current_dir = Path(__file__).parent
+src_path = current_dir
+sys.path.insert(0, str(src_path))
+
+async def main():
+    print("🚀 Quantum Blockchain pour Windows")
+    print("=" * 50)
+    
+    try:
+        # Importer et démarrer le déployeur
+        from scripts.deploy_mainnet import SimpleDeployer
+        
+        deployer = SimpleDeployer()
+        await deployer.deploy("mining", 2)  # Minage avec 2 threads par défaut
+        
+    except ImportError as e:
+        print(f"❌ Erreur d'importation: {e}")
+        print("\n📦 Vérifiez que tous les fichiers sont présents:")
+        print("   - core/blockchain.py")
+        print("   - core/block.py") 
+        print("   - core/transaction.py")
+        print("   - config/genesis_block.py")
+        print("   - scripts/deploy_mainnet.py")
+    except Exception as e:
+        print(f"❌ Erreur: {e}")
+
+if __name__ == "__main__":
+    # Configuration Windows
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n🛑 Arrêt de Quantum Blockchain")
+>>>>>>> aabbdd6 (Quantum)
