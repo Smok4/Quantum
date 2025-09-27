@@ -1,7 +1,7 @@
 import hashlib
 import time
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional  # ← AJOUTEZ Optional ici
 
 @dataclass
 class PQTxOutput:
@@ -21,8 +21,8 @@ class PQTransaction:
     outputs: List[PQTxOutput]
     signature: bytes
     timestamp: float
-    tx_hash: str = None
-    contract_data: Dict[str, Any] = None
+    tx_hash: Optional[str] = None  # ← ET ici
+    contract_data: Optional[Dict[str, Any]] = None  # ← ET ici
     
     def __post_init__(self):
         if self.tx_hash is None:

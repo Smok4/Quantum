@@ -1,7 +1,7 @@
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional  # ← AJOUTEZ Optional ici
 from .transaction import PQTransaction
 
 @dataclass
@@ -12,8 +12,8 @@ class PQBlock:
     previous_hash: str
     nonce: int
     difficulty: int
-    merkle_root: str = None
-    hash: str = None
+    merkle_root: Optional[str] = None  # ← ET ici
+    hash: Optional[str] = None  # ← ET ici
     
     def __post_init__(self):
         if self.merkle_root is None:

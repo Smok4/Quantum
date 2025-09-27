@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌐 Quantum Web3 Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.70"></script>
+    <script src="/quantum-web3.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            overflow: hidden;
+        }
+        
+        /* Layout principal */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            grid-template-rows: 80px 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: #1a1a1a;
+        }
+        
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: #000;
+            border-bottom: 2px solid #00ff88;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        .logo { font-size: 24px; font-weight: bold; }
+        .network-status { display: flex; align-items: center; gap: 15px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff88; }
+        
+        /* Sidebar gauche - Blockchain Info */
+        .sidebar-left {
+            background: #111;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Visualisation 3D centrale */
+        .visualization-3d {
+            background: #000;
+            position: relative;
+        }
+        
+        #3d-graph {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Sidebar droite - Wallet */
+        .sidebar-right {
+            background: #111;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Cartes */
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .card h3 { 
+            color: #00ff88; 
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        /* Boutons */
+        .btn {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover { background: #00cc66; transform: translateY(-2px); }
+        .btn-ledger { background: #0055ff; color: white; }
+        .btn-danger { background: #ff4444; color: white; }
+        
+        /* Forms */
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #222;
+            border: 1px solid #333;
+            color: #00ff88;
+            border-radius: 5px;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse { animation: pulse 2s infinite; }
+        
+        /* Transactions */
+        .transaction {
+            background: #222;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #00ff88;
+        }
+        
+        .transaction.confirmed { border-left-color: #00ff88; }
+        .transaction.pending { border-left-color: #ffaa00; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🌐 QUANTUM WEB3 DASHBOARD</div>
+            <div class="network-status">
+                <span class="status-dot pulse"></span>
+                <span id="network-status">Connecté au réseau Quantum</span>
+                <span id="block-height">Bloc #0</span>
+            </div>
+        </div>
+        
+        <!-- Sidebar gauche - Info Blockchain -->
+        <div class="sidebar-left">
+            <div class="card">
+                <h3>📊 STATISTIQUES RÉSEAU</h3>
+                <div id="network-stats">
+                    <p>🔄 Blocs: <span id="block-count">0</span></p>
+                    <p>⚡ Difficulté: <span id="difficulty">0</span></p>
+                    <p>🔗 Hash Rate: <span id="hash-rate">0</span> H/s</p>
+                    <p>👥 Pairs: <span id="peer-count">0</span></p>
+                    <p>⏱️ Temps bloc: <span id="block-time">0</span>s</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔍 EXPLORATEUR DE BLOCS</h3>
+                <input type="number" id="block-search" placeholder="Numéro de bloc" min="0">
+                <button class="btn" onclick="searchBlock()">Rechercher</button>
+                <div id="block-info" style="margin-top: 10px;"></div>
+            </div>
+            
+            <div class="card">
+                <h3>🌍 RÉSEAU P2P</h3>
+                <div id="peer-list"></div>
+                <button class="btn" onclick="discoverPeers()">Découvrir des pairs</button>
+            </div>
+        </div>
+        
+        <!-- Visualisation 3D centrale -->
+        <div class="visualization-3d">
+            <div id="3d-graph"></div>
+            <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px;">
+                <h3>🌐 RÉSEAU 3D QUANTUM</h3>
+                <p>Nœuds: <span id="node-count">0</span></p>
+                <p>Connexions: <span id="connection-count">0</span></p>
+            </div>
+        </div>
+        
+        <!-- Sidebar droite - Wallet -->
+        <div class="sidebar-right">
+            <div class="card">
+                <h3>💰 PORTEFEUILLE QUANTUM</h3>
+                <div id="wallet-info">
+                    <p>👤 Adresse: <span id="wallet-address" class="pulse">Non connecté</span></p>
+                    <p>💎 Solde: <span id="wallet-balance">0</span> QC</p>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <button class="btn" onclick="generateWallet()">Nouveau Wallet</button>
+                    <button class="btn btn-ledger" onclick="connectLedger()">🔒 Connecter Ledger</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📤 ENVOYER DES FONDS</h3>
+                <input type="text" id="send-to" placeholder="Adresse destination">
+                <input type="number" id="send-amount" placeholder="Montant QC" step="0.001">
+                <select id="send-speed">
+                    <option value="slow">Lent (0.001 QC de frais)</option>
+                    <option value="medium">Moyen (0.01 QC de frais)</option>
+                    <option value="fast">Rapide (0.1 QC de frais)</option>
+                </select>
+                <button class="btn" onclick="sendTransaction()">Envoyer</button>
+                <button class="btn btn-ledger" onclick="sendWithLedger()">Envoyer via Ledger</button>
+            </div>
+            
+            <div class="card">
+                <h3>📜 DERNIÈRES TRANSACTIONS</h3>
+                <div id="transaction-list"></div>
+            </div>
+            
+            <div class="card">
+                <h3>🤖 CONTRATS INTELLIGENTS</h3>
+                <button class="btn" onclick="deployTokenContract()">Déployer Token</button>
+                <button class="btn" onclick="openContractInterface()">Interface Contrats</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== QUANTUM WEB3 DASHBOARD ====================
+        
+        class QuantumDashboard {
+            constructor() {
+                this.wallet = null;
+                this.blockchainData = {};
+                this.networkGraph = null;
+                this.isConnected = false;
+                this.transactionHistory = [];
+                
+                this.init();
+            }
+            
+            async init() {
+                console.log('🌐 Initialisation Quantum Dashboard...');
+                
+                // Initialiser la visualisation 3D
+                this.init3DVisualization();
+                
+                // Se connecter à la blockchain
+                await this.connectToBlockchain();
+                
+                // Démarrer les mises à jour en temps réel
+                this.startRealTimeUpdates();
+                
+                // Charger l'historique des transactions
+                this.loadTransactionHistory();
+            }
+            
+            // ==================== VISUALISATION 3D ====================
+            init3DVisualization() {
+                const graphContainer = document.getElementById('3d-graph');
+                
+                // Données initiales du réseau
+                const initialData = {
+                    nodes: [
+                        { id: 'my-node', name: 'Mon Nœud', val: 10, color: '#00ff88' },
+                        { id: 'peer-1', name: 'Pair 1', val: 5, color: '#0055ff' },
+                        { id: 'peer-2', name: 'Pair 2', val: 5, color: '#0055ff' },
+                        { id: 'peer-3', name: 'Pair 3', val: 5, color: '#0055ff' }
+                    ],
+                    links: [
+                        { source: 'my-node', target: 'peer-1' },
+                        { source: 'my-node', target: 'peer-2' },
+                        { source: 'peer-1', target: 'peer-3' }
+                    ]
+                };
+                
+                // Créer le graph 3D
+                this.networkGraph = ForceGraph3D()(graphContainer)
+                    .graphData(initialData)
+                    .nodeLabel('name')
+                    .nodeColor('color')
+                    .nodeVal('val')
+                    .linkWidth(2)
+                    .linkDirectionalParticles(1)
+                    .linkDirectionalParticleSpeed(0.005);
+                
+                // Mettre à jour les compteurs
+                this.update3DCounters();
+            }
+            
+            update3DCounters() {
+                document.getElementById('node-count').textContent = this.networkGraph.graphData().nodes.length;
+                document.getElementById('connection-count').textContent = this.networkGraph.graphData().links.length;
+            }
+            
+            // ==================== CONNEXION BLOCKCHAIN ====================
+            async connectToBlockchain() {
+                try {
+                    // Utiliser la bibliothèque QuantumWeb3
+                    if (typeof QuantumWeb3 !== 'undefined') {
+                        this.wallet = new QuantumWeb3();
+                        await this.wallet.connect();
+                        this.isConnected = true;
+                        
+                        document.getElementById('wallet-address').textContent = 
+                            this.wallet.account ? this.wallet.account.substring(0, 16) + '...' : 'Non connecté';
+                        
+                        this.updateWalletBalance();
+                    } else {
+                        // Mode simulation pour la démo
+                        this.simulateBlockchainConnection();
+                    }
+                    
+                    this.updateNetworkStatus('Connecté', '#00ff88');
+                } catch (error) {
+                    console.error('Erreur connexion:', error);
+                    this.updateNetworkStatus('Déconnecté', '#ff4444');
+                }
+            }
+            
+            simulateBlockchainConnection() {
+                // Simulation des données blockchain
+                this.wallet = {
+                    account: 'Qm' + Math.random().toString(36).substring(2, 15),
+                    getBalance: async () => ({ balance: Math.random() * 1000 })
+                };
+                
+                this.blockchainData = {
+                    blockHeight: 1426,
+                    difficulty: 18,
+                    hashRate: 1250,
+                    peerCount: 8,
+                    blockTime: 12.5
+                };
+            }
+            
+            // ==================== MISES À JOUR TEMPS RÉEL ====================
+            startRealTimeUpdates() {
+                // Mettre à jour les stats réseau toutes les 5 secondes
+                setInterval(() => this.updateNetworkStats(), 5000);
+                
+                // Mettre à jour le solde toutes les 10 secondes
+                setInterval(() => this.updateWalletBalance(), 10000);
+                
+                // Mettre à jour la visualisation 3D toutes les 15 secondes
+                setInterval(() => this.update3DNetwork(), 15000);
+                
+                // Simuler de nouvelles transactions
+                setInterval(() => this.simulateNewTransaction(), 30000);
+            }
+            
+            async updateNetworkStats() {
+                try {
+                    const response = await fetch('/api/blockchain/info');
+                    const data = await response.json();
+                    
+                    this.blockchainData = data;
+                    
+                    document.getElementById('block-count').textContent = data.blockHeight;
+                    document.getElementById('difficulty').textContent = data.difficulty;
+                    document.getElementById('hash-rate').textContent = data.hashRate || 'N/A';
+                    document.getElementById('peer-count').textContent = data.peerCount || 0;
+                    document.getElementById('block-time').textContent = data.blockTime || 'N/A';
+                    document.getElementById('block-height').textContent = `Bloc #${data.blockHeight}`;
+                    
+                } catch (error) {
+                    // Mode simulation
+                    if (this.blockchainData.blockHeight) {
+                        this.blockchainData.blockHeight++;
+                        this.blockchainData.peerCount += Math.random() > 0.5 ? 1 : -1;
+                        
+                        document.getElementById('block-count').textContent = this.blockchainData.blockHeight;
+                        document.getElementById('difficulty').textContent = this.blockchainData.difficulty;
+                        document.getElementById('peer-count').textContent = this.blockchainData.peerCount;
+                        document.getElementById('block-height').textContent = `Bloc #${this.blockchainData.blockHeight}`;
+                    }
+                }
+            }
+            
+            async updateWalletBalance() {
+                if (this.wallet && this.wallet.getBalance) {
+                    try {
+                        const balance = await this.wallet.getBalance();
+                        document.getElementById('wallet-balance').textContent = 
+                            balance.balance ? balance.balance.toFixed(6) + ' QC' : '0 QC';
+                    } catch (error) {
+                        // Simulation
+                        const simulatedBalance = (Math.random() * 1000).toFixed(6);
+                        document.getElementById('wallet-balance').textContent = simulatedBalance + ' QC';
+                    }
+                }
+            }
+            
+            update3DNetwork() {
+                // Ajouter/supprimer des nœuds aléatoirement pour la démo
+                const currentData = this.networkGraph.graphData();
+                const nodes = [...currentData.nodes];
+                const links = [...currentData.links];
+                
+                // Ajouter occasionnellement un nouveau pair
+                if (Math.random() > 0.7 && nodes.length < 15) {
+                    const newPeerId = 'peer-' + (nodes.length + 1);
+                    nodes.push({ 
+                        id: newPeerId, 
+                        name: 'Pair ' + (nodes.length + 1), 
+                        val: 3, 
+                        color: '#0055ff' 
+                    });
+                    
+                    // Connecter à un nœud aléatoire
+                    const randomNode = nodes[Math.floor(Math.random() * (nodes.length - 1))];
+                    links.push({ source: randomNode.id, target: newPeerId });
+                }
+                
+                this.networkGraph.graphData({ nodes, links });
+                this.update3DCounters();
+            }
+            
+            // ==================== FONCTIONNALITÉS WALLET ====================
+            async generateWallet() {
+                try {
+                    if (typeof QuantumWeb3 !== 'undefined') {
+                        this.wallet = new QuantumWeb3();
+                        await this.wallet.connect();
+                        this.isConnected = true;
+                        
+                        document.getElementById('wallet-address').textContent = 
+                            this.wallet.account.substring(0, 16) + '...';
+                        
+                        this.updateWalletBalance();
+                        this.addTransaction('Génération de wallet', '0 QC', 'success');
+                    } else {
+                        // Simulation
+                        this.wallet = {
+                            account: 'Qm' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+                        };
+                        document.getElementById('wallet-address').textContent = 
+                            this.wallet.account.substring(0, 16) + '...';
+                        this.addTransaction('Génération de wallet simulée', '0 QC', 'success');
+                    }
+                } catch (error) {
+                    this.showError('Erreur génération wallet: ' + error.message);
+                }
+            }
+            
+            async connectLedger() {
+                try {
+                    this.showMessage('🔒 Recherche de Ledger...', 'info');
+                    
+                    // Simulation de connexion Ledger
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    this.wallet = {
+                        account: 'QmLedger' + Math.random().toString(36).substring(2, 10),
+                        isLedger: true
+                    };
+                    
+                    document.getElementById('wallet-address').textContent = 
+                        this.wallet.account.substring(0, 16) + '... [Ledger]';
+                    
+                    this.showMessage('✅ Ledger connecté avec succès!', 'success');
+                    this.addTransaction('Ledger connecté', '0 QC', 'success');
+                    
+                } catch (error) {
+                    this.showError('Erreur connexion Ledger: ' + error.message);
+                }
+            }
+            
+            async sendTransaction() {
+                const toAddress = document.getElementById('send-to').value;
+                const amount = parseFloat(document.getElementById('send-amount').value);
+                const speed = document.getElementById('send-speed').value;
+                
+                if (!toAddress || !amount) {
+                    this.showError('Veuillez remplir tous les champs');
+                    return;
+                }
+                
+                try {
+                    this.showMessage('⏳ Envoi en cours...', 'info');
+                    
+                    let fee = 0.001;
+                    if (speed === 'medium') fee = 0.01;
+                    if (speed === 'fast') fee = 0.1;
+                    
+                    // Simulation d'envoi
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    this.addTransaction(`Envoi à ${toAddress.substring(0, 12)}...`, `-${amount} QC`, 'pending');
+                    
+                    // Simuler la confirmation
+                    setTimeout(() => {
+                        this.updateTransactionStatus('confirmed');
+                    }, 10000);
+                    
+                    this.showMessage(`✅ Transaction envoyée! Frais: ${fee} QC`, 'success');
+                    
+                    // Vider le formulaire
+                    document.getElementById('send-to').value = '';
+                    document.getElementById('send-amount').value = '';
+                    
+                } catch (error) {
+                    this.showError('Erreur envoi: ' + error.message);
+                }
+            }
+            
+            async sendWithLedger() {
+                if (!this.wallet || !this.wallet.isLedger) {
+                    this.showError('Veuillez d\'abord connecter votre Ledger');
+                    return;
+                }
+                
+                this.showMessage('🔒 Confirmez sur votre Ledger...', 'info');
+                await this.sendTransaction();
+            }
+            
+            // ==================== GESTION DES TRANSACTIONS ====================
+            addTransaction(description, amount, status) {
+                const transaction = {
+                    id: Date.now(),
+                    description,
+                    amount,
+                    status,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                
+                this.transactionHistory.unshift(transaction);
+                this.updateTransactionList();
+            }
+            
+            updateTransactionStatus(status) {
+                if (this.transactionHistory.length > 0) {
+                    this.transactionHistory[0].status = status;
+                    this.updateTransactionList();
+                }
+            }
+            
+            updateTransactionList() {
+                const container = document.getElementById('transaction-list');
+                container.innerHTML = '';
+                
+                this.transactionHistory.slice(0, 10).forEach(tx => {
+                    const txElement = document.createElement('div');
+                    txElement.className = `transaction ${tx.status}`;
+                    txElement.innerHTML = `
+                        <strong>${tx.description}</strong><br>
+                        <span style="color: ${tx.amount.startsWith('-') ? '#ff4444' : '#00ff88'}">
+                            ${tx.amount}
+                        </span>
+                        <small>${tx.timestamp}</small>
+                    `;
+                    container.appendChild(txElement);
+                });
+            }
+            
+            loadTransactionHistory() {
+                // Charger l'historique depuis l'API
+                this.addTransaction('Initialisation', '0 QC', 'confirmed');
+                this.addTransaction('Connexion réseau', '0 QC', 'confirmed');
+            }
+            
+            // ==================== UTILITAIRES ====================
+            updateNetworkStatus(message, color) {
+                document.getElementById('network-status').textContent = message;
+                document.querySelector('.status-dot').style.background = color;
+            }
+            
+            showMessage(message, type) {
+                const colors = { success: '#00ff88', error: '#ff4444', info: '#0055ff' };
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+            
+            showError(message) {
+                this.showMessage(message, 'error');
+            }
+            
+            simulateNewTransaction() {
+                if (Math.random() > 0.5) {
+                    const types = ['Reçu de', 'Envoyé à'];
+                    const addresses = ['QmAlice', 'QmBob', 'QmCharlie', 'QmDave'];
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    const address = addresses[Math.floor(Math.random() * addresses.length)];
+                    const amount = (Math.random() * 10).toFixed(6);
+                    
+                    this.addTransaction(
+                        `${type} ${address}`, 
+                        type === 'Reçu de' ? `+${amount} QC` : `-${amount} QC`,
+                        'confirmed'
+                    );
+                }
+            }
+        }
+        
+        // ==================== FONCTIONS GLOBALES ====================
+        function searchBlock() {
+            const blockNumber = document.getElementById('block-search').value;
+            if (blockNumber) {
+                dashboard.showMessage(`Recherche du bloc #${blockNumber}...`, 'info');
+                // Implémenter la recherche de bloc
+            }
+        }
+        
+        function discoverPeers() {
+            dashboard.showMessage('🔍 Recherche de pairs...', 'info');
+            // Implémenter la découverte de pairs
+        }
+        
+        function deployTokenContract() {
+            dashboard.showMessage('🤖 Déploiement de contrat token...', 'info');
+            // Implémenter le déploiement de contrat
+        }
+        
+        function openContractInterface() {
+            dashboard.showMessage('📝 Ouverture interface contrats...', 'info');
+            // Implémenter l'interface contrats
+        }
+        
+        // ==================== INITIALISATION ====================
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new QuantumDashboard();
+        });
+    </script>
+</body>
+</html>

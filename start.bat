@@ -1,39 +1,29 @@
-<<<<<<< HEAD
 @echo off
 chcp 65001
-title Quantum Blockchain Windows
+title Quantum Blockchain - Version Complete
 
-echo 🌐 Quantum Blockchain - Démarrage...
+echo 🌐 QUANTUM BLOCKCHAIN - LANCEMENT COMPLET
+echo ========================================
 echo.
 
-# Vérifier si Python est installé
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo ❌ Python n'est pas installé ou n'est pas dans le PATH
-    echo 📥 Téléchargez Python depuis: https://python.org
-    pause
-    exit /b 1
-)
-
-echo ✅ Python détecté
-
-# Vérifier et installer les dépendances
-if not exist "requirements.txt" (
-    echo ❌ Fichier requirements.txt manquant
-    pause
-    exit /b 1
-)
-
-echo 📦 Installation des dépendances...
-pip install -r requirements.txt
-
-echo 🚀 Lancement de Quantum Blockchain...
-python main.py --web-port 8080 --p2p-port 8333
-
-=======
-@echo off
-chcp 65001
 cd /d "C:\Users\adrie\Desktop\Projet code\BLOCKCHAIN\Quantum_Blockchain\src"
-python main.py
->>>>>>> aabbdd6 (Quantum)
+
+echo 📦 Vérification des dépendances...
+python -c "import aiohttp, websockets, cryptography, psutil" 2>nul
+if errorlevel 1 (
+    echo ❌ Dépendances manquantes. Installation...
+    pip install aiohttp websockets cryptography psutil
+)
+
+echo.
+echo 🚀 Lancement du nœud complet...
+echo 💡 URLs d'accès:
+echo    - Interface web: http://localhost:8080
+echo    - API REST: http://localhost:8334/api
+echo    - Minage CPU: Activé
+echo.
+echo ⏳ Initialisation en cours...
+
+python main.py --threads 2
+
 pause
